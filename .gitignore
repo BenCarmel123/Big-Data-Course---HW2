@@ -1,0 +1,15 @@
+# Secrets
+astradb/*.json
+astradb/*.zip
+
+# Large datasets
+data/*.json
+
+# Java dependencies
+hw2-java/lib/
+*.jar
+
+# Build artifacts
+*.class
+target/
+out/
