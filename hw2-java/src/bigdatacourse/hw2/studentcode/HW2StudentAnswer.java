@@ -1,12 +1,15 @@
 package bigdatacourse.hw2.studentcode;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONObject;
 
@@ -18,65 +21,58 @@ import bigdatacourse.hw2.HW2API;
 public class HW2StudentAnswer implements HW2API{
 
 	public static final String		NOT_AVAILABLE_VALUE 	=		"na";
+
 	// CREATE TABLE for Items
 	public static final String 		CREATE_ITEMS_TABLE = 
     "CREATE TABLE IF NOT EXISTS items (" +
     "asin text PRIMARY KEY, " +
-    "categories list<text>, " +
-    "description text, " +
     "title text, " +
-    "price float, " +
-    "brand text, " +
     "imUrl text, " +
-    "alsoBought list<text>, " +
-    "alsoViewed list<text>" +
+    "categories list<text>, " +
+    "description text " +
     ");";
 
 	// CREATE TABLE for User Reviews
 	public static final String 		CREATE_USER_REVIEWS_TABLE = 
     "CREATE TABLE IF NOT EXISTS user_reviews (" +
-    "reviewerID text, " +
-    "reviewTime timestamp, " +
+    "time timestamp, " +
     "asin text, " +
+	"reviewerID text, " +
     "reviewerName text, " +
-    "helpful list<int>, " +
+	"rating float, " +
+	"summary text, " +
     "reviewText text, " +
-    "overall int, " +
-    "summary text, " +
-    "unixReviewTime bigint, " +
-    "PRIMARY KEY (reviewerID, reviewTime, asin)" +
-    ") WITH CLUSTERING ORDER BY (reviewTime DESC, asin ASC);";
+    "PRIMARY KEY (reviewerID, time, asin)" +
+    ") WITH CLUSTERING ORDER BY (time DESC, asin ASC);";
 
 	// CREATE TABLE for Item Reviews
 	public static final String 		CREATE_ITEM_REVIEWS_TABLE = 
     "CREATE TABLE IF NOT EXISTS item_reviews (" +
+    "time timestamp, " +
     "asin text, " +
-    "reviewTime timestamp, " +
-    "reviewerID text, " +
+	"reviewerID text, " +
     "reviewerName text, " +
-    "helpful list<int>, " +
+	"rating float, " +
+	"summary text, " +
     "reviewText text, " +
-    "overall int, " +
-    "summary text, " +
-    "unixReviewTime bigint, " +
-    "PRIMARY KEY (asin, reviewTime, reviewerID)" +
-    ") WITH CLUSTERING ORDER BY (reviewTime DESC, reviewerID ASC);";
+    "PRIMARY KEY (asin, time, reviewerID)" +
+    ") WITH CLUSTERING ORDER BY (time DESC, reviewerID ASC);";
 
 	public static final String 		QUERY_ITEM = "SELECT * FROM items WHERE asin = ?;";
 	public static final String 		QUERY_USER_REVIEWS = "SELECT * FROM user_reviews WHERE reviewerID = ?;";
 	public static final String 		QUERY_ITEM_REVIEWS = "SELECT * FROM item_reviews WHERE asin = ?;";
 
-	public static final String 		INSERT_ITEM = 
-    "INSERT INTO items (asin, categories, description, title, price, brand, imUrl, alsoBought, alsoViewed) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+	public static final String 		INSERT_ITEM =
+	"INSERT INTO items (asin, title, imUrl, categories, description) " +
+	"VALUES (?, ?, ?, ?, ?);";
 
 	public static final String 		INSERT_USER_REVIEW = 
-    "INSERT INTO user_reviews (reviewerID, reviewTime, asin, reviewerName, helpful, reviewText, overall, summary, unixReviewTime) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    "INSERT INTO user_reviews (reviewerID, time, asin, reviewerName, rating, summary, reviewText) " +
+	"VALUES (?, ?, ?, ?, ?, ?, ?);";
 
 	public static final String 		INSERT_ITEM_REVIEW = 
-    "INSERT INTO item_reviews (asin, reviewTime, reviewerID, reviewerName, helpful, reviewText, overall, summary, unixReviewTime) " +
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    "INSERT INTO item_reviews (asin, time, reviewerID, reviewerName, rating, summary, reviewText) " +
+	"VALUES (?, ?, ?, ?, ?, ?, ?);";
 
 	
 	// cassandra session
@@ -112,7 +108,6 @@ public class HW2StudentAnswer implements HW2API{
 		System.out.println("Initializing connection to Cassandra... Done");
 	}
 
-
 	@Override
 	/**
 	 * Close the Cassandra session if it is open.
@@ -128,8 +123,6 @@ public class HW2StudentAnswer implements HW2API{
 		System.out.println("Closing Cassandra connection... Done");
 	}
 
-	
-	
 	@Override
 	/**
 	 * Create required keyspace tables (items, user_reviews, item_reviews).
@@ -186,69 +179,54 @@ public class HW2StudentAnswer implements HW2API{
 		}
 	}
 
-@Override
-	/**
-	 * Read items from JSON lines file and insert them using a thread pool.
-	 */
+	@Override
 	public void loadItems(String pathItemsFile) throws Exception {
 		System.out.println("Loading items from file: " + pathItemsFile);
 
-		List<JSONObject> allItems = new java.util.ArrayList<>();
-		try (Scanner scanner = new Scanner(new java.io.File(pathItemsFile))) {
+		ExecutorService pool = Executors.newFixedThreadPool(250);
+
+		try (Scanner scanner = new Scanner(new File(pathItemsFile))) {
 			while (scanner.hasNextLine()) {
-				allItems.add(new JSONObject(scanner.nextLine()));
+				String item = scanner.nextLine();
+
+				pool.submit(new InsertTask(
+					item,
+					insertItemStmt,
+					session,
+					InsertTask.Type.ITEM
+				));
 			}
 		}
 
-		int chunkSize = 200;
-		java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(50);
-
-		for (int i = 0; i < allItems.size(); i += chunkSize) {
-			int end = Math.min(i + chunkSize, allItems.size());
-			List<JSONObject> chunk = allItems.subList(i, end);
-
-			pool.submit(new InsertTask(chunk, insertItemStmt, session, InsertTask.Type.ITEM));
-		}
-
 		pool.shutdown();
-		pool.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
-
+		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 		System.out.println("Finished loading items.");
 	}
 
 
 	@Override
-	/**
-	 * Read reviews from JSON lines file and insert user/item review records
-	 * concurrently using a thread pool.
-	 */
 	public void loadReviews(String pathReviewsFile) throws Exception {
 		System.out.println("Loading reviews from file: " + pathReviewsFile);
 
-		// Read all JSON lines
-		List<JSONObject> allReviews = new java.util.ArrayList<>();
-		try (Scanner scanner = new Scanner(new java.io.File(pathReviewsFile))) {
+		ExecutorService pool = Executors.newFixedThreadPool(200);
+
+		try (Scanner scanner = new Scanner(new File(pathReviewsFile))) {
 			while (scanner.hasNextLine()) {
-				allReviews.add(new JSONObject(scanner.nextLine()));
+				String review = scanner.nextLine();
+				pool.submit(new InsertTask(review, insertUserReviewStmt, session,
+					InsertTask.Type.USER_REVIEW
+				));
+				pool.submit(new InsertTask(
+					review, insertItemReviewStmt, session,
+					InsertTask.Type.ITEM_REVIEW
+				));
 			}
 		}
 
-		// Use thread pool
-		int chunkSize = 50;
-		java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(10);
-
-		for (int i = 0; i < allReviews.size(); i += chunkSize) {
-			int end = Math.min(i + chunkSize, allReviews.size());
-			List<JSONObject> chunk = allReviews.subList(i, end);
-
-			// submit both tasks: user_reviews and item_reviews
-			pool.submit(new InsertTask(chunk, insertUserReviewStmt, session, InsertTask.Type.USER_REVIEW));
-			pool.submit(new InsertTask(chunk, insertItemReviewStmt, session, InsertTask.Type.ITEM_REVIEW));
-		}
-
 		pool.shutdown();
-		pool.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
-
+		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+		System.out.println("user count - " + InsertTask.userCount);
+		System.out.println("item count - " + InsertTask.itemCount);
 		System.out.println("Finished loading reviews.");
 	}
 
@@ -319,7 +297,6 @@ public class HW2StudentAnswer implements HW2API{
 
 		return reviews;
 	}
-		
 	
 	// Formatting methods, do not change!
 	private String formatItem(String asin, String title, String imageUrl, Set<String> categories, String description) {
