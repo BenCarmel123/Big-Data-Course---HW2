@@ -20,6 +20,7 @@ public class InsertTask implements Runnable {
     private final Type type;
     public static AtomicInteger userCount = new AtomicInteger(0);
     public static AtomicInteger itemCount = new AtomicInteger(0);
+    public static AtomicInteger itemsCount = new AtomicInteger(0);
 
     public InsertTask(String jsonLine,
                       PreparedStatement stmt,
@@ -46,7 +47,7 @@ public class InsertTask implements Runnable {
                 parseList(obj, "categories"),
                 obj.optString("description", HW2StudentAnswer.NOT_AVAILABLE_VALUE)
             ));
-            System.out.println("insert item");
+            itemsCount.incrementAndGet();
             break;
 
         case USER_REVIEW: {

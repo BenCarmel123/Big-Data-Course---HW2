@@ -200,6 +200,7 @@ public class HW2StudentAnswer implements HW2API{
 
 		pool.shutdown();
 		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+		System.out.println("count - " + InsertTask.itemsCount);
 		System.out.println("Finished loading items.");
 	}
 
@@ -259,13 +260,13 @@ public class HW2StudentAnswer implements HW2API{
 		ArrayList<String> reviews = new ArrayList<>();
 
 		for (var row : result) {
-			Instant time = row.getInstant("reviewTime");
+			Instant time = row.getInstant("time");
 			reviews.add(formatReview(
 				time,
 				row.getString("asin"),
 				row.getString("reviewerID"),
 				row.getString("reviewerName"),
-				row.getInt("overall"),
+				(int) row.getFloat("rating"),
 				row.getString("summary"),
 				row.getString("reviewText")
 			));
@@ -283,13 +284,13 @@ public class HW2StudentAnswer implements HW2API{
 		ArrayList<String> reviews = new ArrayList<>();
 
 		for (var row : result) {
-			Instant time = row.getInstant("reviewTime");
+			Instant time = row.getInstant("time");
 			reviews.add(formatReview(
 				time,
 				row.getString("asin"),
 				row.getString("reviewerID"),
 				row.getString("reviewerName"),
-				row.getInt("overall"),
+				(int) row.getFloat("rating"),
 				row.getString("summary"),
 				row.getString("reviewText")
 			));
