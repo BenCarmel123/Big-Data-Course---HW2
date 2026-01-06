@@ -225,8 +225,8 @@ public class HW2StudentAnswer implements HW2API{
 
 		pool.shutdown();
 		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		System.out.println("user count - " + InsertTask.userCount);
-		System.out.println("item count - " + InsertTask.itemCount);
+		System.out.println("user count - " + InsertTask.userCount.get());
+		System.out.println("item count - " + InsertTask.itemCount.get());
 		System.out.println("Finished loading reviews.");
 	}
 

@@ -8,6 +8,7 @@ import org.json.JSONObject;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class InsertTask implements Runnable {
 
@@ -17,8 +18,8 @@ public class InsertTask implements Runnable {
     private final PreparedStatement stmt;
     private final CqlSession session;
     private final Type type;
-    public static int userCount = 0;
-    public static int itemCount = 0;
+    public static AtomicInteger userCount = new AtomicInteger(0);
+    public static AtomicInteger itemCount = new AtomicInteger(0);
 
     public InsertTask(String jsonLine,
                       PreparedStatement stmt,
@@ -61,7 +62,10 @@ public class InsertTask implements Runnable {
                 .setString(5, obj.optString("summary", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(6, obj.optString("reviewText", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
             );
-            userCount++;
+             int count = userCount.incrementAndGet();
+            if (count % 100_000 == 0) {
+                System.out.println("Inserted USER_REVIEW: " + count);
+            }
             break;
         }
 
@@ -78,8 +82,10 @@ public class InsertTask implements Runnable {
                 .setString(5, obj.optString("summary", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(6, obj.optString("reviewText", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
             );
-            itemCount++;
-            break;
+           int count = itemCount.incrementAndGet();
+            if (count % 100_000 == 0) {
+                System.out.println("Inserted ITEM_REVIEW: " + count);
+            }
         }
         }
 
