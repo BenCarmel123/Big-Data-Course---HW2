@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.json.JSONObject;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -252,53 +251,62 @@ public class HW2StudentAnswer implements HW2API{
 	
 	
 	@Override
-	/**
-	 * Fetch reviews for a reviewer and return them as formatted strings.
-	 */
-	public Iterable<String> userReviews(String reviewerID) {
-		var result = session.execute(selectUserReviewsStmt.bind(reviewerID));
-		ArrayList<String> reviews = new ArrayList<>();
+public Iterable<String> userReviews(String reviewerID) {
+    var result = session.execute(selectUserReviewsStmt.bind(reviewerID));
+    ArrayList<String> reviews = new ArrayList<>();
 
-		for (var row : result) {
-			Instant time = row.getInstant("time");
-			reviews.add(formatReview(
-				time,
-				row.getString("asin"),
-				row.getString("reviewerID"),
-				row.getString("reviewerName"),
-				(int) row.getFloat("rating"),
-				row.getString("summary"),
-				row.getString("reviewText")
-			));
-		}
+    for (var row : result) {
+        Instant time = row.getInstant("time");
+        // Convert default Instant to null so formatReview can handle it
+        Instant displayTime = time.equals(Instant.EPOCH) ? null : time;
 
-		return reviews;
-	}
+        float ratingVal = row.getFloat("rating");
 
-	@Override
-	/**
-	 * Fetch reviews for an item (asin) and return them as formatted strings.
-	 */
-	public Iterable<String> itemReviews(String asin) {
-		var result = session.execute(selectItemReviewsStmt.bind(asin));
-		ArrayList<String> reviews = new ArrayList<>();
+        // Convert default rating 0.0 to null and float rating to int
+        Integer displayRating = (ratingVal == 0.0f) ? null : (int) ratingVal;
 
-		for (var row : result) {
-			Instant time = row.getInstant("time");
-			reviews.add(formatReview(
-				time,
-				row.getString("asin"),
-				row.getString("reviewerID"),
-				row.getString("reviewerName"),
-				(int) row.getFloat("rating"),
-				row.getString("summary"),
-				row.getString("reviewText")
-			));
-		}
+        reviews.add(formatReview(
+            displayTime,
+            row.getString("asin"),
+            row.getString("reviewerID"),
+            row.getString("reviewerName"),
+            displayRating,
+            row.getString("summary"),
+            row.getString("reviewText")
+        ));
+    }
 
-		return reviews;
-	}
-	
+    return reviews;
+}
+
+@Override
+public Iterable<String> itemReviews(String asin) {
+    var result = session.execute(selectItemReviewsStmt.bind(asin));
+    ArrayList<String> reviews = new ArrayList<>();
+
+    for (var row : result) {
+        Instant time = row.getInstant("time");
+		// Convert default Instant to null so formatReview can handle it
+        Instant displayTime = time.equals(Instant.EPOCH) ? null : time;
+
+        float ratingVal = row.getFloat("rating");
+		// Convert default rating 0.0 to null and float rating to int
+        Integer displayRating = (ratingVal == 0.0f) ? null : (int) ratingVal;
+
+        reviews.add(formatReview(
+            displayTime,
+            row.getString("asin"),
+            row.getString("reviewerID"),
+            row.getString("reviewerName"),
+            displayRating,
+            row.getString("summary"),
+            row.getString("reviewText")
+        ));
+    }
+
+    return reviews;
+}
+
 	// Formatting methods, do not change!
 	private String formatItem(String asin, String title, String imageUrl, Set<String> categories, String description) {
 		String itemDesc = "";

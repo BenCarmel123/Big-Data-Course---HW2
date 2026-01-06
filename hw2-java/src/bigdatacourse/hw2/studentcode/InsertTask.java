@@ -59,12 +59,12 @@ public class InsertTask implements Runnable {
                 .setInstant(1, reviewTime)
                 .setString(2, obj.optString("asin", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(3, obj.optString("reviewerName", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
-                .setFloat(4, (float) obj.optDouble("rating", 0.0))
+                .setFloat(4, (float) obj.optDouble("overall", 0.0))
                 .setString(5, obj.optString("summary", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(6, obj.optString("reviewText", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
             );
              int count = userCount.incrementAndGet();
-            if (count % 100_000 == 0) {
+            if (count % 50_000 == 0) {
                 System.out.println("Inserted USER_REVIEW: " + count);
             }
             break;
@@ -72,25 +72,25 @@ public class InsertTask implements Runnable {
 
         case ITEM_REVIEW: {
             long unixTime = obj.optLong("unixReviewTime", 0);
-            Instant reviewTime = Instant.ofEpochSecond(unixTime); // unified
+            Instant reviewTime = Instant.ofEpochSecond(unixTime); 
 
             session.execute(stmt.bind()
                 .setString(0, obj.optString("asin", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setInstant(1, reviewTime)
                 .setString(2, obj.optString("reviewerID", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(3, obj.optString("reviewerName", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
-                .setFloat(4, (float) obj.optDouble("rating", 0.0))
+                .setFloat(4, (float) obj.optDouble("overall", 0.0))
                 .setString(5, obj.optString("summary", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
                 .setString(6, obj.optString("reviewText", HW2StudentAnswer.NOT_AVAILABLE_VALUE))
             );
            int count = itemCount.incrementAndGet();
-            if (count % 100_000 == 0) {
+            if (count % 50_000 == 0) {
                 System.out.println("Inserted ITEM_REVIEW: " + count);
             }
         }
         }
 
-        Thread.sleep(5); 
+        Thread.sleep(10); 
 
     } catch (Exception e) {
         System.out.println("InsertTask error: " + e.getMessage());
