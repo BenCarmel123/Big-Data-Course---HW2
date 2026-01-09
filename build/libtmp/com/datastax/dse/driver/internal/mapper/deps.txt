@@ -1,0 +1,34 @@
+
+The following files have been resolved:
+   org.apache.cassandra:java-driver-core:jar:4.19.2:compile
+   com.datastax.oss:native-protocol:jar:1.5.2:compile
+   io.netty:netty-handler:jar:4.1.119.Final:compile
+   io.netty:netty-common:jar:4.1.119.Final:compile
+   io.netty:netty-resolver:jar:4.1.119.Final:compile
+   io.netty:netty-buffer:jar:4.1.119.Final:compile
+   io.netty:netty-transport:jar:4.1.119.Final:compile
+   io.netty:netty-transport-native-unix-common:jar:4.1.119.Final:compile
+   io.netty:netty-codec:jar:4.1.119.Final:compile
+   org.apache.cassandra:java-driver-guava-shaded:jar:4.19.2:compile
+   com.typesafe:config:jar:1.4.1:compile
+   com.github.jnr:jnr-posix:jar:3.1.15:compile
+   com.github.jnr:jnr-ffi:jar:2.2.11:compile
+   com.github.jnr:jffi:jar:1.3.9:compile
+   com.github.jnr:jffi:jar:native:1.3.9:runtime
+   org.ow2.asm:asm:jar:9.2:compile
+   org.ow2.asm:asm-commons:jar:9.2:compile
+   org.ow2.asm:asm-analysis:jar:9.2:compile
+   org.ow2.asm:asm-tree:jar:9.2:compile
+   org.ow2.asm:asm-util:jar:9.2:compile
+   com.github.jnr:jnr-a64asm:jar:1.0.0:compile
+   com.github.jnr:jnr-x86asm:jar:1.0.2:compile
+   com.github.jnr:jnr-constants:jar:0.10.3:compile
+   org.slf4j:slf4j-api:jar:1.7.26:compile
+   io.dropwizard.metrics:metrics-core:jar:4.1.18:compile
+   org.hdrhistogram:HdrHistogram:jar:2.1.12:compile
+   com.fasterxml.jackson.core:jackson-core:jar:2.13.5:compile
+   com.fasterxml.jackson.core:jackson-databind:jar:2.13.5:compile
+   com.fasterxml.jackson.core:jackson-annotations:jar:2.13.5:compile
+   org.reactivestreams:reactive-streams:jar:1.0.3:compile
+   org.apache.cassandra:java-driver-query-builder:jar:4.19.2:compile
+
