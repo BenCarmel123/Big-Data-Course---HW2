@@ -6,18 +6,16 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-
 import bigdatacourse.hw2.HW2API;
 
-public class HW2StudentAnswer implements HW2API{
+public class HW2StudentAnswer implements HW2API {
 
 	public static final String		NOT_AVAILABLE_VALUE 	=		"na";
 
@@ -73,7 +71,6 @@ public class HW2StudentAnswer implements HW2API{
     "INSERT INTO item_reviews (asin, time, reviewerID, reviewerName, rating, summary, reviewText) " +
 	"VALUES (?, ?, ?, ?, ?, ?, ?);";
 
-	
 	// cassandra session
 	private CqlSession session;
 	
@@ -199,10 +196,9 @@ public class HW2StudentAnswer implements HW2API{
 
 		pool.shutdown();
 		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		System.out.println("count - " + InsertTask.itemsCount);
+		// System.out.println("count - " + InsertTask.itemsCount);
 		System.out.println("Finished loading items.");
 	}
-
 
 	@Override
 	public void loadReviews(String pathReviewsFile) throws Exception {
@@ -225,52 +221,47 @@ public class HW2StudentAnswer implements HW2API{
 
 		pool.shutdown();
 		pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		System.out.println("user count - " + InsertTask.userCount.get());
-		System.out.println("item count - " + InsertTask.itemCount.get());
+		// System.out.println("user count - " + InsertTask.userCount.get());
+		// System.out.println("item count - " + InsertTask.itemCount.get());
 		System.out.println("Finished loading reviews.");
 	}
 
 
-	@Override
-	/**
-	 * Fetch an item by ASIN and return a formatted string representation.
-	 */
-	public String item(String asin) {
-		var row = session.execute(selectItemStmt.bind(asin)).one();
-		if (row == null) return "not exists";
+@Override
+public String item(String asin) {
+    var row = session.execute(selectItemStmt.bind(asin)).one();
+    if (row == null)
+        return "not exists";
 
-		Set<String> categories = new TreeSet<>(row.getList("categories", String.class));
-		return formatItem(
-			row.getString("asin"),
-			row.getString("title"),
-			row.getString("imUrl"),
-			categories,
-			row.getString("description")
-		);
-	}
+    Set<String> categories = flattenCategories(
+        row.getList("categories", String.class)
+    );
+
+    return formatItem(
+        row.getString("asin"),
+        row.getString("title"),
+        row.getString("imUrl"),
+        categories,
+        row.getString("description")
+    );
+}
+
 	
-	
-	@Override
+@Override
 public Iterable<String> userReviews(String reviewerID) {
     var result = session.execute(selectUserReviewsStmt.bind(reviewerID));
     ArrayList<String> reviews = new ArrayList<>();
 
     for (var row : result) {
         Instant time = row.getInstant("time");
-        // Convert default Instant to null so formatReview can handle it
-        Instant displayTime = time.equals(Instant.EPOCH) ? null : time;
-
-        float ratingVal = row.getFloat("rating");
-
-        // Convert default rating 0.0 to null and float rating to int
-        Integer displayRating = (ratingVal == 0.0f) ? null : (int) ratingVal;
+        Integer rating = (int) row.getFloat("rating");
 
         reviews.add(formatReview(
-            displayTime,
+            time,
             row.getString("asin"),
             row.getString("reviewerID"),
             row.getString("reviewerName"),
-            displayRating,
+            rating,
             row.getString("summary"),
             row.getString("reviewText")
         ));
@@ -286,19 +277,14 @@ public Iterable<String> itemReviews(String asin) {
 
     for (var row : result) {
         Instant time = row.getInstant("time");
-		// Convert default Instant to null so formatReview can handle it
-        Instant displayTime = time.equals(Instant.EPOCH) ? null : time;
-
-        float ratingVal = row.getFloat("rating");
-		// Convert default rating 0.0 to null and float rating to int
-        Integer displayRating = (ratingVal == 0.0f) ? null : (int) ratingVal;
+        Integer rating = (int) row.getFloat("rating");
 
         reviews.add(formatReview(
-            displayTime,
+            time,
             row.getString("asin"),
             row.getString("reviewerID"),
             row.getString("reviewerName"),
-            displayRating,
+            rating,
             row.getString("summary"),
             row.getString("reviewText")
         ));
@@ -307,6 +293,29 @@ public Iterable<String> itemReviews(String asin) {
     return reviews;
 }
 
+private static Set<String> flattenCategories(List<String> rawCategories) {
+    Set<String> flat = new TreeSet<>();
+    if (rawCategories == null) return flat;
+
+    for (String cat : rawCategories) {
+        if (cat == null) continue;
+
+        String s = cat.trim();
+
+        // unwrap stringified list: "[A, B, C]"
+        if (s.startsWith("[") && s.endsWith("]")) {
+            s = s.substring(1, s.length() - 1);
+        }
+
+        for (String token : s.split(",")) {
+            String t = token.trim();
+            if (!t.isEmpty()) {
+                flat.add(t);
+            }
+        }
+    }
+    return flat;
+}
 	// Formatting methods, do not change!
 	private String formatItem(String asin, String title, String imageUrl, Set<String> categories, String description) {
 		String itemDesc = "";
@@ -329,5 +338,4 @@ public Iterable<String> itemReviews(String asin) {
 			", reviewText: " 	+ reviewText + "\n";
 		return reviewDesc;
 	}
-
 }

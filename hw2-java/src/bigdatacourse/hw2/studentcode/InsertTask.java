@@ -90,14 +90,14 @@ public class InsertTask implements Runnable {
         }
         }
 
+        // Ingestion throttling to avoid timeouts
         Thread.sleep(10); 
 
     } catch (Exception e) {
         System.out.println("InsertTask error: " + e.getMessage());
     }
 }
-
-
+    // Parse helper for item categories
     private static List<String> parseList(JSONObject obj, String key) {
         List<String> list = new ArrayList<>();
         if (obj.has(key) && obj.optJSONArray(key) != null) {
